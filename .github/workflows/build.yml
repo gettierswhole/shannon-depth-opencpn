@@ -47,3 +47,34 @@ jobs:
             build/*.tar.gz
             build/*.xml
           if-no-files-found: error
+
+  android-arm64:
+    runs-on: ubuntu-22.04
+    env:
+      OCPN_TARGET: android-aarch64
+      CMAKE_BUILD_PARALLEL_LEVEL: 4
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+          fetch-depth: 10
+
+      - name: Install tools
+        run: sudo apt-get update -q && sudo apt-get install -q -y gettext
+
+      - name: Build tarball
+        run: |
+          echo "Using NDK: $ANDROID_NDK_LATEST_HOME"
+          mkdir build-android && cd build-android
+          NDK_HOME="$ANDROID_NDK_LATEST_HOME" cmake \
+            -DCMAKE_TOOLCHAIN_FILE="$GITHUB_WORKSPACE/cmake/android-aarch64-toolchain.cmake" ..
+          NDK_HOME="$ANDROID_NDK_LATEST_HOME" make VERBOSE=1
+
+      - name: Keep the package
+        uses: actions/upload-artifact@v4
+        with:
+          name: ShannonDepth-android-arm64
+          path: |
+            build-android/*.tar.gz
+            build-android/*.xml
+          if-no-files-found: error

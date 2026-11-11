@@ -111,7 +111,7 @@ void ShannonDepthPi::DrawPanel(piDC& dc, PlugIn_ViewPort* vp) {
   const int width = std::max(w1, std::max(w2, w3)) + 2 * pad;
   const int height = h1 + h2 + h3 + 2 * pad + pad / 2;
   const int x = pad * 2;
-  const int y = vp->pix_height - height - pad * 6;  // bottom-left corner
+  const int y = vp->pix_height - height - pad * 12;  // bottom-left, above scale bar
 
   dc.SetPen(wxPen(wxColour(60, 60, 60), 1));
   dc.SetBrush(wxBrush(wxColour(255, 255, 255, 220)));
