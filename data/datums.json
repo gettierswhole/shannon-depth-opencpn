@@ -1,0 +1,449 @@
+{
+  "schema": 1,
+  "generated": "2026-11-11T21:38:15Z",
+  "units": "metres, OD Malin",
+  "notice": "Untested experiment, not an aid to navigation.",
+  "stretches": [
+    {
+      "id": "derg",
+      "name": "Lough Derg",
+      "span": "Killaloe – Meelick",
+      "gauge": {
+        "doc": "portumna",
+        "station": "25341",
+        "name": "Portumna Bridge"
+      },
+      "datum": {
+        "level": 30.2484,
+        "basis": "chart-datum",
+        "how": "8 ft over the Killaloe upper cill (27.810 m OD Malin)",
+        "confirmed": false
+      },
+      "alternatives": [
+        {
+          "label": "8 ft over the canal-side (lower) Killaloe cill, the 2018 figure",
+          "level": 30.698400000000003
+        }
+      ],
+      "band": 0.1,
+      "bandWhy": "±4 in until you check it, plus one bigger doubt. This uses 8 ft over the lake-side (upper) Killaloe cill, as the CSIG's 2020 article says. A 2018 forum post said 8 ft over the lower cill, which would give about 1 ft 6 in less water. A reading of the Killaloe canal-entrance gauge or a lead-line check settles it: with Portumna at 30.64 m, about 9 ft 4 in on that gauge confirms this datum, about 7 ft 10 in the other. The gauge is also at Portumna, not where you are.",
+      "estimated": false,
+      "lake": true,
+      "caveats": [
+        "The gauge is at Portumna. When Ardnacrusha runs hard the lake slopes toward Killaloe, so the south end can sit a few centimetres lower.",
+        "Upstream of Portumna to Meelick the river runs downhill to the gauge, so you'll have slightly more water there than shown."
+      ],
+      "boundary": [
+        [
+          52.79,
+          -8.48
+        ],
+        [
+          52.79,
+          -8.4
+        ],
+        [
+          52.86,
+          -8.22
+        ],
+        [
+          52.97,
+          -8.15
+        ],
+        [
+          53.08,
+          -8.14
+        ],
+        [
+          53.13,
+          -8.09
+        ],
+        [
+          53.16,
+          -8.0768
+        ],
+        [
+          53.185,
+          -8.0768
+        ],
+        [
+          53.185,
+          -8.2
+        ],
+        [
+          53.1,
+          -8.3
+        ],
+        [
+          53,
+          -8.4
+        ],
+        [
+          52.92,
+          -8.58
+        ],
+        [
+          52.85,
+          -8.55
+        ]
+      ]
+    },
+    {
+      "id": "mid",
+      "name": "Meelick – Athlone",
+      "span": "Banagher, Shannonbridge",
+      "gauge": {
+        "doc": "banagher",
+        "station": "25017",
+        "name": "Banagher"
+      },
+      "datum": {
+        "level": 32.449,
+        "basis": "summer-level",
+        "how": "Waterways Ireland Banagher ordinary summer level (32.449 m OD Malin)",
+        "confirmed": false
+      },
+      "alternatives": [],
+      "band": 0.15,
+      "bandWhy": "There is no chart datum here, so ±6 in is a rough allowance, not a measured one. The CSIG average their river depths; this compares the river at Banagher with Waterways Ireland's summer level there, both on OPW's gauge. Away from Banagher the level differs: the river slopes down from Athlone to Meelick, more so when it is running.",
+      "estimated": true,
+      "lake": false,
+      "caveats": [
+        "Banagher sits mid-stretch. With the sluices at Meelick open and the river running, the level near Athlone will be higher and near Meelick lower.",
+        "This stretch floods early. Expect the level to change quickly after heavy rain."
+      ],
+      "boundary": [
+        [
+          53.169,
+          -8.0768
+        ],
+        [
+          53.17,
+          -8.02
+        ],
+        [
+          53.18,
+          -7.96
+        ],
+        [
+          53.205,
+          -7.958
+        ],
+        [
+          53.215,
+          -7.962
+        ],
+        [
+          53.235,
+          -7.965
+        ],
+        [
+          53.3,
+          -7.93
+        ],
+        [
+          53.36,
+          -7.9
+        ],
+        [
+          53.4205,
+          -7.88
+        ],
+        [
+          53.4205,
+          -7.98
+        ],
+        [
+          53.38,
+          -8.02
+        ],
+        [
+          53.33,
+          -8.08
+        ],
+        [
+          53.3133,
+          -8.17
+        ],
+        [
+          53.31,
+          -8.2
+        ],
+        [
+          53.29,
+          -8.2
+        ],
+        [
+          53.26,
+          -8.1
+        ],
+        [
+          53.22,
+          -8.06
+        ],
+        [
+          53.19,
+          -8.08
+        ],
+        [
+          53.185,
+          -8.0768
+        ]
+      ]
+    },
+    {
+      "id": "ree",
+      "name": "Lough Ree",
+      "span": "Athlone – Tarmonbarry",
+      "gauge": {
+        "doc": "athloneus",
+        "station": "26333",
+        "name": "Athlone (above the weir)"
+      },
+      "datum": {
+        "level": 34.2854,
+        "basis": "chart-datum",
+        "how": "5.5 ft over the Athlone upper cill (32.609 m OD Malin)",
+        "confirmed": false
+      },
+      "alternatives": [
+        {
+          "label": "7 ft over the Athlone cill (Waterways Ireland's summer level, the old figure)",
+          "level": 34.7426
+        },
+        {
+          "label": "5 ft over the Athlone cill (the CSIG's 2019 forum figure)",
+          "level": 34.133
+        }
+      ],
+      "band": 0.1,
+      "bandWhy": "±4 in until you check it. The datum, 5.5 ft over the Athlone lock cill, comes from the IWAI Athlone branch and fits the lake's record since 2003; the cill height is the one their figures imply (3 cm below the lock table's), and nobody has checked the result against the water. The gauge is at Athlone, which reads a few centimetres below the open lake.",
+      "estimated": false,
+      "lake": true,
+      "caveats": [
+        "The gauge is on the quay by Athlone Castle, just above the lock. The channel narrows there, so out on the lake the water usually sits a few centimetres higher than shown, about 9 cm higher at Hodson's Bay in mid-October.",
+        "ESB draw Lough Ree down in autumn to make room for winter rain, but the datum is close to the historical low, so the lake rarely goes below it.",
+        "A strong wind along the lake piles water up at the downwind end."
+      ],
+      "boundary": [
+        [
+          53.4215,
+          -7.98
+        ],
+        [
+          53.4215,
+          -7.9
+        ],
+        [
+          53.5,
+          -7.82
+        ],
+        [
+          53.6,
+          -7.8
+        ],
+        [
+          53.7,
+          -7.87
+        ],
+        [
+          53.725,
+          -7.912
+        ],
+        [
+          53.7385,
+          -7.912
+        ],
+        [
+          53.7385,
+          -7.96
+        ],
+        [
+          53.7,
+          -8.02
+        ],
+        [
+          53.6,
+          -8.1
+        ],
+        [
+          53.5,
+          -8.06
+        ]
+      ]
+    },
+    {
+      "id": "key",
+      "name": "Upper Shannon",
+      "span": "Tarmonbarry – Lough Key",
+      "gauge": {
+        "doc": "carrick",
+        "station": "26324",
+        "name": "Carrick-on-Shannon"
+      },
+      "datum": {
+        "level": 40.27,
+        "basis": "summer-level",
+        "how": "Waterways Ireland Carrick ordinary summer level (40.270 m OD Malin)",
+        "confirmed": false
+      },
+      "alternatives": [],
+      "band": 0.15,
+      "bandWhy": "There is no chart datum here, so ±6 in is a rough allowance, not a measured one. This compares the river with Waterways Ireland's summer level at Carrick, which only covers the pool between Clarendon and Albert locks.",
+      "estimated": true,
+      "lake": false,
+      "caveats": [
+        "The gauge is at Carrick, so the figure only applies between Clarendon Lock and Albert Lock. Lough Key and the pools below Albert Lock and Roosky are held at their own levels: Waterways Ireland's daily report gives each one.",
+        "Waterways Ireland give the upper Shannon's draft as 1.35 m, and less on the Lough Allen Canal."
+      ],
+      "boundary": [
+        [
+          53.929,
+          -8.0305
+        ],
+        [
+          53.9106,
+          -8.0014
+        ],
+        [
+          53.9,
+          -8.01
+        ],
+        [
+          53.9,
+          -8.12
+        ],
+        [
+          53.95,
+          -8.17
+        ],
+        [
+          53.985,
+          -8.198
+        ],
+        [
+          54.008,
+          -8.198
+        ],
+        [
+          54.008,
+          -8.12
+        ],
+        [
+          53.9946,
+          -8.079
+        ],
+        [
+          53.9932,
+          -8.057
+        ],
+        [
+          53.96,
+          -8.03
+        ],
+        [
+          53.94,
+          -8.045
+        ]
+      ]
+    }
+  ],
+  "lockZones": [
+    {
+      "name": "Victoria Lock, Meelick",
+      "lat": 53.1687,
+      "lon": -8.077,
+      "r": 250
+    },
+    {
+      "name": "Meelick Weir",
+      "lat": 53.1744,
+      "lon": -8.0766,
+      "r": 250
+    },
+    {
+      "name": "Meelick lock cut",
+      "lat": 53.17155,
+      "lon": -8.0768,
+      "r": 200
+    },
+    {
+      "name": "Athlone Lock",
+      "lat": 53.4219,
+      "lon": -7.9407,
+      "r": 200
+    },
+    {
+      "name": "Athlone Weir",
+      "lat": 53.42153,
+      "lon": -7.93871,
+      "r": 200
+    },
+    {
+      "name": "Tarmonbarry Lock",
+      "lat": 53.7387,
+      "lon": -7.9187,
+      "r": 200
+    },
+    {
+      "name": "Tarmonbarry Weir",
+      "lat": 53.73946,
+      "lon": -7.91774,
+      "r": 200
+    },
+    {
+      "name": "Royal Canal, Lock 47",
+      "lat": 53.73427,
+      "lon": -7.9112,
+      "r": 200
+    },
+    {
+      "name": "Albert Lock",
+      "lat": 53.91055,
+      "lon": -8.00136,
+      "r": 200
+    },
+    {
+      "name": "Jamestown Weir",
+      "lat": 53.92903,
+      "lon": -8.03049,
+      "r": 200
+    },
+    {
+      "name": "Clarendon Lock",
+      "lat": 54.00072,
+      "lon": -8.20119,
+      "r": 200
+    },
+    {
+      "name": "Lough Allen Canal, Battlebridge",
+      "lat": 53.99454,
+      "lon": -8.07886,
+      "r": 200
+    },
+    {
+      "name": "Shannon-Erne Waterway, Lock 16",
+      "lat": 53.9932,
+      "lon": -8.05702,
+      "r": 200
+    },
+    {
+      "name": "Grand Canal, 36th Lock",
+      "lat": 53.21955,
+      "lon": -7.9639,
+      "r": 300
+    },
+    {
+      "name": "Grand Canal, 35th Lock",
+      "lat": 53.221,
+      "lon": -7.95664,
+      "r": 300
+    },
+    {
+      "name": "Pollboy Lock, River Suck",
+      "lat": 53.3133,
+      "lon": -8.1915,
+      "r": 200
+    }
+  ]
+}

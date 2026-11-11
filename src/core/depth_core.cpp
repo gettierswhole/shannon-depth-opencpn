@@ -66,6 +66,27 @@ const Stretch* StretchAt(const std::vector<Stretch>& stretches, LatLon p) {
   return found;
 }
 
+double DistanceMetres(LatLon a, LatLon b) {
+  const double r = 6371008.8, k = 3.14159265358979323846 / 180;
+  double dlat = (b.lat - a.lat) * k, dlon = (b.lon - a.lon) * k;
+  double h = std::sin(dlat / 2) * std::sin(dlat / 2) +
+             std::cos(a.lat * k) * std::cos(b.lat * k) * std::sin(dlon / 2) * std::sin(dlon / 2);
+  return 2 * r * std::asin(std::min(1.0, std::sqrt(h)));
+}
+
+Location Locate(const std::vector<Stretch>& stretches,
+                const std::vector<LockZone>& zones, LatLon p) {
+  Location loc;
+  for (const auto& z : zones) {
+    if (DistanceMetres(z.centre, p) <= z.radius_m) {
+      loc.lock = &z;
+      return loc;
+    }
+  }
+  loc.stretch = StretchAt(stretches, p);
+  return loc;
+}
+
 // ---- Readings -----------------------------------------------------------
 
 ManualState ManualStateAt(const ManualReading& m, Millis now) {

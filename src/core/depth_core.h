@@ -65,6 +65,26 @@ bool InsidePolygon(const std::vector<LatLon>& poly, LatLon p);
 // The stretch containing p, or nullptr. Never guesses a neighbour.
 const Stretch* StretchAt(const std::vector<Stretch>& stretches, LatLon p);
 
+// A circle round a lock or weir where the level changes across a few metres.
+struct LockZone {
+  std::string name;
+  LatLon centre;
+  double radius_m;
+};
+
+// Great-circle distance in metres.
+double DistanceMetres(LatLon a, LatLon b);
+
+struct Location {
+  const Stretch* stretch = nullptr;  // null: show "No stretch"
+  const LockZone* lock = nullptr;    // set when inside a lock zone
+};
+
+// Where the boat is: inside a lock zone gives no stretch, whatever the
+// polygons say.
+Location Locate(const std::vector<Stretch>& stretches,
+                const std::vector<LockZone>& zones, LatLon p);
+
 // ---- Readings -----------------------------------------------------------
 
 struct Reading {

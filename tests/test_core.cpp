@@ -7,6 +7,7 @@
 
 #include "../src/core/depth_core.h"
 #include "parity_vectors.h"
+#include "boundary_data.h"
 
 static int failures = 0, checks = 0;
 #define CHECK(cond, ...)                                     \
@@ -129,6 +130,49 @@ static void TestPolygons() {
   CHECK(StretchAt(v, {53.05, -7.95}) == nullptr, "overlap not refused");
 }
 
+// Known harbours and spots on the water, and places that must give no
+// stretch. Inside a lock zone there is never a stretch.
+static void TestBoundaries() {
+  auto st = bdata::Stretches();
+  auto zones = bdata::Zones();
+  struct P { const char* where; double lat, lon; const char* expect; };
+  const P pts[] = {
+      {"Killaloe bridge", 52.8066, -8.4430, "derg"},
+      {"Dromineer", 52.9250, -8.2780, "derg"},
+      {"Portumna bridge", 53.0880, -8.2190, "derg"},
+      {"Banagher bridge", 53.1920, -7.9870, "mid"},
+      {"Shannonbridge", 53.2780, -8.0510, "mid"},
+      {"Clonmacnoise", 53.3260, -7.9870, "mid"},
+      {"Athlone town quay", 53.4255, -7.9440, "ree"},
+      {"Hodson Bay", 53.4680, -8.0030, "ree"},
+      {"Lanesborough", 53.6720, -7.9910, "ree"},
+      {"Carrick-on-Shannon", 53.9460, -8.0920, "key"},
+      {"Leitrim", 53.9905, -8.0650, "key"},
+      {"Lough Key", 54.0060, -8.2350, ""},
+      {"Roosky", 53.8320, -7.9200, ""},
+      {"Above Tarmonbarry", 53.7470, -7.9200, ""},
+      {"Dublin", 53.3500, -6.2600, ""},
+      {"Victoria Lock", 53.1687, -8.0770, "lock"},
+      {"Athlone Lock", 53.4219, -7.9407, "lock"},
+      {"Albert Lock", 53.9106, -8.0014, "lock"},
+  };
+  for (const auto& p : pts) {
+    Location loc = Locate(st, zones, {p.lat, p.lon});
+    std::string got = loc.lock ? "lock" : loc.stretch ? loc.stretch->id : "";
+    CHECK(got == p.expect, "%s: got '%s', expected '%s'", p.where, got.c_str(), p.expect);
+  }
+  // No two stretches overlap anywhere on a 300 m grid over the whole river.
+  int overlaps = 0;
+  for (double lat = 52.75; lat <= 54.05; lat += 0.0027)
+    for (double lon = -8.62; lon <= -7.75; lon += 0.0045) {
+      int n = 0;
+      for (const auto& s : st) n += InsidePolygon(s.boundary, {lat, lon});
+      overlaps += n > 1;
+    }
+  CHECK(overlaps == 0, "%d grid points in more than one stretch", overlaps);
+  CHECK(std::fabs(DistanceMetres({53.0, -8.0}, {53.01, -8.0}) - 1112) < 2, "distance");
+}
+
 static void TestTrend() {
   std::vector<HistoryPoint> h;
   for (int i = 0; i <= 8; i++) h.push_back({i * kHour, 30.0 + i * 0.01});
@@ -146,6 +190,7 @@ int main() {
   TestNoDatumNoNumber();
   TestPolygons();
   TestTrend();
+  TestBoundaries();
   std::printf("%d checks, %d failures\n", checks, failures);
   return failures ? 1 : 0;
 }

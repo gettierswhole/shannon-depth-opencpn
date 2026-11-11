@@ -67,4 +67,7 @@ process.stdout.write(JSON.stringify({
   units: "metres, OD Malin",
   notice: "Untested experiment, not an aid to navigation.",
   stretches,
+  // Near a lock or weir the level changes across a few metres, so the plugin
+  // shows no figure inside these circles (radius in metres).
+  lockZones: boundaries.zones || [],
 }, null, 2) + "\n");
