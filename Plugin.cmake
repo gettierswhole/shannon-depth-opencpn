@@ -76,6 +76,9 @@ set(PKG_API_LIB api-18)  #  A dir in opencpn-libs/ e. g., api-17 or api-16
 macro(late_init)
   # Perform initialization after the PACKAGE_NAME library, compilers
   # and ocpn::api is available.
+  # Makes ocpn_plugin.h declare wxEVT_DOWNLOAD_EVENT as imported from
+  # OpenCPN, which MSVC needs to link it.
+  target_compile_definitions(${PACKAGE_NAME} PRIVATE MAKING_PLUGIN)
   if (APPLE)
     target_compile_definitions(${PACKAGE_NAME} PUBLIC OCPN_GHC_FILESYSTEM)
   endif ()
