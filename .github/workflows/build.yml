@@ -12,6 +12,16 @@ on:
 # with OpenCPN's "Import plugin" button.
 
 jobs:
+  core-tests:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Calculation core against the page
+        run: |
+          cmake -S tests -B build-tests
+          cmake --build build-tests
+          build-tests/test_core
+
   msvc:
     runs-on: windows-2022
     strategy:
@@ -86,7 +96,7 @@ jobs:
   # https://github.com/gettierswhole/shannon-depth-opencpn/releases/download/test-catalog/ocpn-plugins.xml
   catalog:
     if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
-    needs: [msvc, android-arm64]
+    needs: [core-tests, msvc, android-arm64]
     runs-on: ubuntu-22.04
     permissions:
       contents: write

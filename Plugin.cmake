@@ -55,6 +55,8 @@ set(SRC
     src/shannondepth_pi.cpp
     src/plug_utils.cpp
     src/plug_utils.h
+    src/core/depth_core.h
+    src/core/depth_core.cpp
 )
 
 set(PKG_API_LIB api-18)  #  A dir in opencpn-libs/ e. g., api-17 or api-16
