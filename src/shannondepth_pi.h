@@ -19,16 +19,22 @@
 #ifndef WX_PRECOMP
 #include <wx/wx.h>
 #endif
+#include <wx/timer.h>
+
+#include <memory>
 
 #include "config.h"
+#include "core/depth_core.h"
+#include "feed_store.h"
 #include "ocpn_plugin.h"
+#include "panel.h"
 
 class piDC;
 
-class ShannonDepthPi : public opencpn_plugin_118 {
+class ShannonDepthPi : public opencpn_plugin_118, public wxEvtHandler {
 public:
   explicit ShannonDepthPi(void* ppimgr);
-  ~ShannonDepthPi() override = default;
+  ~ShannonDepthPi() override;
 
   int Init() override;
   bool DeInit() override;
@@ -51,12 +57,32 @@ public:
                                 int priority) override;
   bool RenderGLOverlayMultiCanvas(wxGLContext* pcontext, PlugIn_ViewPort* vp,
                                   int canvas_ix, int priority) override;
+  void SetPositionFixEx(PlugIn_Position_Fix_Ex& pfix) override;
+
+  // Where the panel's figures come from, for the calculator (phase 3b).
+  struct State {
+    const sd::StretchInfo* info = nullptr;
+    sd::Location location;
+    bool from_boat = false;
+    sd::Reading reading;
+    sd::Correction correction;
+    sd::Freshness freshness = sd::Freshness::kNoData;
+  };
+  State CurrentState(double lat, double lon, bool from_boat) const;
 
 private:
-  // Draws the correction panel. Phase 1: a placeholder only.
-  void DrawPanel(piDC& dc, PlugIn_ViewPort* vp);
+  PanelContent BuildContent(const State& s, sd::Millis now) const;
+  void Draw(PlugIn_ViewPort* vp, wxDC* dc, wxGLContext* gl);
+  void OnRepaintTimer(wxTimerEvent& ev);
+  void Repaint();
 
   wxBitmap m_panel_bitmap;
+  std::unique_ptr<FeedStore> m_feed;
+  PanelRenderer m_renderer;
+  wxTimer m_repaint_timer;
+
+  double m_fix_lat = 0, m_fix_lon = 0;
+  sd::Millis m_fix_at = 0;  // wall clock when the last good fix arrived
 };
 
 #endif  // SHANNONDEPTH_PI_H_

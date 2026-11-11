@@ -21,6 +21,7 @@ jobs:
           cmake -S tests -B build-tests
           cmake --build build-tests
           build-tests/test_core
+          build-tests/test_feed .
 
   msvc:
     runs-on: windows-2022

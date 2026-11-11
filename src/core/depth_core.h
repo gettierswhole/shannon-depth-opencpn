@@ -36,6 +36,9 @@ std::string FtInText(int inches);
 // "+1 ft 4 in" or "−4 in" (true minus sign). (page: signedIn)
 std::string SignedFtIn(int inches);
 
+// "20 min old", "5 h old", "3 days old". (page: ageText)
+std::string AgeText(Millis age);
+
 // ---- Stretches and datums -----------------------------------------------
 
 struct LatLon {

@@ -57,6 +57,12 @@ set(SRC
     src/plug_utils.h
     src/core/depth_core.h
     src/core/depth_core.cpp
+    src/core/feed.h
+    src/core/feed.cpp
+    src/feed_store.h
+    src/feed_store.cpp
+    src/panel.h
+    src/panel.cpp
 )
 
 set(PKG_API_LIB api-18)  #  A dir in opencpn-libs/ e. g., api-17 or api-16

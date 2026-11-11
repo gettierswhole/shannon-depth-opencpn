@@ -39,6 +39,14 @@ std::string SignedFtIn(int n) {
   return std::string(n < 0 ? kMinus : "+") + FtInText(n);
 }
 
+std::string AgeText(Millis ms) {
+  long long mins = static_cast<long long>(JsRound(static_cast<double>(std::max<Millis>(0, ms)) / 60000));
+  if (mins < 60) return std::to_string(mins) + " min old";
+  long long h = static_cast<long long>(JsRound(mins / 60.0));
+  if (h < 48) return std::to_string(h) + " h old";
+  return std::to_string(static_cast<long long>(JsRound(h / 24.0))) + " days old";
+}
+
 // ---- Stretches ----------------------------------------------------------
 
 bool InsidePolygon(const std::vector<LatLon>& poly, LatLon p) {
