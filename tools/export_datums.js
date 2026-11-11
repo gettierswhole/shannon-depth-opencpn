@@ -63,7 +63,6 @@ const stretches = box.REACHES.map((r) => {
 
 process.stdout.write(JSON.stringify({
   schema: 1,
-  generated: new Date().toISOString().replace(/\.\d+Z$/, "Z"),
   units: "metres, OD Malin",
   notice: "Untested experiment, not an aid to navigation.",
   stretches,
