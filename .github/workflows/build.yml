@@ -125,7 +125,9 @@ jobs:
         run: |
           v=$(sed -n 's/^set(PKG_VERSION \([0-9.]*\)).*/\1/p' Plugin.cmake)
           if gh release view "v$v" >/dev/null 2>&1; then echo "v$v already released"; exit 0; fi
-          gh release create "v$v" catalog/*.tar.gz catalog/ocpn-plugins.xml --prerelease \
+          python3 ci/make-catalog.py artifacts \
+            "https://github.com/${{ github.repository }}/releases/download/v$v" release
+          gh release create "v$v" release/*.tar.gz release/ocpn-plugins.xml --prerelease \
             --target "${{ github.sha }}" --title "Shannon Depth $v" --notes-file RELEASE_NOTES.md
 
       - name: Publish test-catalog release
