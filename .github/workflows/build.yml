@@ -1,0 +1,49 @@
+---
+name: build
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+  workflow_dispatch:
+
+# No Cloudsmith upload for now: the upload scripts skip when the key is
+# empty. Built packages are kept as workflow artifacts instead, for import
+# with OpenCPN's "Import plugin" button.
+
+jobs:
+  msvc:
+    runs-on: windows-2022
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - platform: Win32
+            arch: x86
+          - platform: x64
+            arch: x64
+    env:
+      PLATFORM: ${{ matrix.platform }}
+      CONFIGURATION: RelWithDebInfo
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: true
+          fetch-depth: 10
+
+      - uses: ilammy/msvc-dev-cmd@v1
+        with:
+          arch: ${{ matrix.arch }}
+
+      - name: Build tarball
+        shell: cmd
+        run: call ci\appveyor.bat
+
+      - name: Keep the package
+        uses: actions/upload-artifact@v4
+        with:
+          name: ShannonDepth-windows-${{ matrix.platform }}
+          path: |
+            build/*.tar.gz
+            build/*.xml
+          if-no-files-found: error
