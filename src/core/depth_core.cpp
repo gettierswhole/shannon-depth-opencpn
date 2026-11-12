@@ -105,6 +105,33 @@ ManualState ManualStateAt(const ManualReading& m, Millis now) {
   return ManualState::kFresh;
 }
 
+bool GaugeSteadySince(const ManualReading& m, const Reading& gauge,
+                      const std::vector<HistoryPoint>& history, double tol,
+                      Millis now) {
+  if (!m.valid || !m.has_anchor || !gauge.valid) return false;
+  if (now - gauge.time > kStableGaugeMaxAge) return false;
+  if (gauge.time < m.time) return false;  // nothing since the reading yet
+  if (std::fabs(gauge.level - m.anchor) > tol + 1e-9) return false;
+  Millis last = m.time;
+  for (const auto& p : history) {
+    if (p.t < m.time) continue;
+    if (p.t - last > kStableMaxGap) return false;
+    if (std::fabs(p.v - m.anchor) > tol + 1e-9) return false;
+    last = std::max(last, p.t);
+  }
+  return gauge.time - last <= kStableMaxGap;
+}
+
+ManualState ManualStateAt(const ManualReading& m, Millis now, const Reading& gauge,
+                          const std::vector<HistoryPoint>& history, double tol) {
+  if (!m.valid) return ManualState::kNone;
+  Millis age = now - m.time;
+  if (age > kManualStableMax) return ManualState::kLapsed;
+  if (age >= kManualRed && GaugeSteadySince(m, gauge, history, tol, now))
+    return ManualState::kStable;
+  return ManualStateAt(m, now);
+}
+
 Freshness FreshnessOf(const Reading& r, Millis now, const FreshnessRules& rules) {
   if (!r.valid) return Freshness::kNoData;
   Millis age = now - r.time;

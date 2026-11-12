@@ -1,6 +1,7 @@
 // Unit and parity tests for the Shannon Depth calculation core.
 // Build: cmake -S tests -B build-tests && cmake --build build-tests && build-tests/test_core
 
+#include <algorithm>
 #include <cmath>
 #include <cstdio>
 #include <string>
@@ -99,12 +100,64 @@ static void TestFreshnessAndManual() {
   CHECK(FreshnessOf(at(50), now) == Freshness::kUnusable, "50 h not unusable");
   CHECK(FreshnessOf(Reading{}, now) == Freshness::kNoData, "invalid not no-data");
   // Acceptance: your own reading is red at 4 h and gone at 13 h.
-  ManualReading m{30.0, now - 1 * kHour, true};
+  ManualReading m{30.0, now - 1 * kHour, true, false, 0};
   CHECK(ManualStateAt(m, now) == ManualState::kFresh, "manual 1 h not fresh");
   m.time = now - 4 * kHour;
   CHECK(ManualStateAt(m, now) == ManualState::kRed, "manual 4 h not red");
   m.time = now - 13 * kHour;
   CHECK(ManualStateAt(m, now) == ManualState::kLapsed, "manual 13 h not lapsed");
+}
+
+// Owner's rule: your own reading stays valid while the official gauge stays
+// within half the band of its level when the reading was entered.
+static void TestManualStable() {
+  const Millis now = 1800000000000LL;
+  const double tol = 0.05;  // half of +/-0.10
+  ManualReading m{30.40, now - 20 * kHour, true, true, 30.000};
+  auto hist = [&](double drift_at_10h) {
+    std::vector<HistoryPoint> h;
+    for (int i = 30; i >= 0; i--) {
+      double v = 30.000 + (i == 10 ? drift_at_10h : 0.01 * (i % 2));
+      h.push_back({now - i * kHour, v});
+    }
+    return h;
+  };
+  Reading g{30.01, now - 20 * 60000, true};
+  // Steady: still valid at 20 h, past the 12 h lapse.
+  CHECK(ManualStateAt(m, now, g, hist(0), tol) == ManualState::kStable, "steady gauge not stable");
+  // One hourly point 6 cm off: back to the 3 h / 12 h rules, so lapsed at 20 h.
+  CHECK(ManualStateAt(m, now, g, hist(0.06), tol) == ManualState::kLapsed, "6 cm move not lapsed");
+  // Exactly at the tolerance still counts as steady.
+  CHECK(ManualStateAt(m, now, g, hist(0.05), tol) == ManualState::kStable, "5 cm edge");
+  // Current gauge reading off by more than the tolerance.
+  Reading moved{30.07, now - 20 * 60000, true};
+  CHECK(ManualStateAt(m, now, moved, hist(0), tol) == ManualState::kLapsed, "gauge now moved");
+  // Stale gauge: stability can't be judged.
+  Reading stale{30.00, now - 4 * kHour, true};
+  CHECK(ManualStateAt(m, now, stale, hist(0), tol) == ManualState::kLapsed, "stale gauge");
+  // Gap in the history longer than 3 h.
+  std::vector<HistoryPoint> gap = hist(0);
+  gap.erase(std::remove_if(gap.begin(), gap.end(), [&](const HistoryPoint& p) {
+              return p.t > now - 15 * kHour && p.t < now - 10 * kHour; }), gap.end());
+  CHECK(ManualStateAt(m, now, g, gap, tol) == ManualState::kLapsed, "history gap");
+  // No anchor (old-style reading): normal rules.
+  ManualReading na = m;
+  na.has_anchor = false;
+  CHECK(ManualStateAt(na, now, g, hist(0), tol) == ManualState::kLapsed, "no anchor");
+  // Seven-day cap even while steady.
+  ManualReading old = m;
+  old.time = now - 8 * 24 * kHour;
+  CHECK(ManualStateAt(old, now, g, hist(0), tol) == ManualState::kLapsed, "7 day cap");
+  // Under 3 h it is simply fresh; at 4 h with a steady gauge, stable not red.
+  ManualReading young = m;
+  young.time = now - 1 * kHour;
+  CHECK(ManualStateAt(young, now, g, hist(0), tol) == ManualState::kFresh, "young fresh");
+  young.time = now - 4 * kHour;
+  CHECK(ManualStateAt(young, now, g, hist(0), tol) == ManualState::kStable, "4 h steady");
+  CHECK(ManualStateAt(young, now, moved, hist(0), tol) == ManualState::kRed, "4 h moved red");
+  Stretch derg;
+  derg.band = 0.10;
+  CHECK(std::fabs(StableTolerance(derg) - 0.05) < 1e-12, "half band");
 }
 
 static void TestNoDatumNoNumber() {
@@ -187,6 +240,7 @@ int main() {
   TestCorrections();
   TestCalculator();
   TestFreshnessAndManual();
+  TestManualStable();
   TestNoDatumNoNumber();
   TestPolygons();
   TestTrend();

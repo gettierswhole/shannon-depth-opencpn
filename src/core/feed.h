@@ -31,6 +31,8 @@ struct StretchInfo {
   std::string band_why;
   bool lake = false;
   std::vector<Alternative> alternatives;
+  double gauge_zero = 0;  // staff gauge zero, m OD Malin; 0 if not given
+  std::vector<Alternative> cills;  // lock cills, for feet over the cill
 };
 
 struct Datums {

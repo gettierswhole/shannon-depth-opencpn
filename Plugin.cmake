@@ -32,7 +32,7 @@ set(OCPN_RELEASE_REPO
 # -------  Plugin setup --------
 #
 set(PKG_NAME ShannonDepth_pi)
-set(PKG_VERSION 0.2.0) # Major.Minor.Patch
+set(PKG_VERSION 0.3.0) # Major.Minor.Patch
 set(PKG_PRERELEASE "")  # Empty, or a tag like 'beta'
 
 set(DISPLAY_NAME "Shannon Depth")    # Dialogs, installer artifacts, ...
@@ -63,6 +63,10 @@ set(SRC
     src/feed_store.cpp
     src/panel.h
     src/panel.cpp
+    src/settings.h
+    src/settings.cpp
+    src/sd_dialog.h
+    src/sd_dialog.cpp
 )
 
 set(PKG_API_LIB api-18)  #  A dir in opencpn-libs/ e. g., api-17 or api-16

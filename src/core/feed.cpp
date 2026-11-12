@@ -123,6 +123,13 @@ bool ParseDatums(const std::string& text, Datums* out, std::string* error) {
       }
       si.alternatives.push_back(alt);
     }
+    double zero;
+    if (Num(s["gauge"]["zero"], &zero) && zero > 20 && zero < 60) si.gauge_zero = zero;
+    for (const auto& cl : s["cills"]) {
+      Alternative a;
+      a.label = Str(cl["name"]);
+      if (Num(cl["level"], &a.level) && a.level > 20 && a.level < 60) si.cills.push_back(a);
+    }
     for (const auto& p : s["boundary"]) {
       double lat, lon;
       if (!p.isArray() || p.size() != 2 || !Num(p[0], &lat) || !Num(p[1], &lon)) {

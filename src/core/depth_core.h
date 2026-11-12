@@ -101,18 +101,40 @@ struct HistoryPoint {
   double v;
 };
 
-// Your own reading, entered on the device.
+// Your own reading, entered on the device. The official gauge's level at
+// the moment it was entered is kept with it.
 struct ManualReading {
-  double level = 0;
+  double level = 0;  // m OD Malin
   Millis time = 0;
   bool valid = false;
+  bool has_anchor = false;
+  double anchor = 0;  // official gauge level when the reading was entered
 };
 
-constexpr Millis kManualRed = 3 * kHour;   // turns red after 3 h
-constexpr Millis kManualMax = 12 * kHour;  // lapses at 12 h
+constexpr Millis kManualRed = 3 * kHour;      // turns red after 3 h
+constexpr Millis kManualMax = 12 * kHour;     // lapses at 12 h
+constexpr Millis kManualStableMax = 7 * 24 * kHour;  // even while the gauge is steady
+constexpr Millis kStableGaugeMaxAge = 3 * kHour;     // stability needs a current gauge
+constexpr Millis kStableMaxGap = 3 * kHour;          // and no gap in its history
 
-enum class ManualState { kNone, kFresh, kRed, kLapsed };
+// kStable: the official gauge has stayed within the tolerance of its level
+// at entry ever since, so the reading still holds (owner's rule, 12 Nov
+// 2026). Otherwise the 3 h / 12 h rules apply from the time of entry.
+enum class ManualState { kNone, kFresh, kStable, kRed, kLapsed };
+
+// True if every gauge reading since the manual reading (the history and the
+// latest reading) is within tol of the anchor, the gauge is current, and
+// its history has no gap longer than kStableMaxGap.
+bool GaugeSteadySince(const ManualReading& m, const Reading& gauge,
+                      const std::vector<HistoryPoint>& history, double tol,
+                      Millis now);
+
 ManualState ManualStateAt(const ManualReading& m, Millis now);
+ManualState ManualStateAt(const ManualReading& m, Millis now, const Reading& gauge,
+                          const std::vector<HistoryPoint>& history, double tol);
+
+// The tolerance for a stretch: half its band.
+inline double StableTolerance(const Stretch& s) { return s.band / 2; }
 
 // ---- Freshness ----------------------------------------------------------
 

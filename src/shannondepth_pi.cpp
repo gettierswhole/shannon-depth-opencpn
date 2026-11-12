@@ -11,6 +11,8 @@
 
 #include "shannondepth_pi.h"
 
+#include <wx/filename.h>
+
 #include <algorithm>
 #include <cmath>
 #include <cstdlib>
@@ -18,6 +20,7 @@
 
 #include "pidc.h"
 #include "plug_utils.h"
+#include "sd_dialog.h"
 
 #ifdef USE_ANDROID_GLES2
 #include "pi_shaders.h"
@@ -45,7 +48,14 @@ wxString U(const std::string& s) { return wxString::FromUTF8(s.c_str()); }
 
 sd::Millis NowMs() { return wxGetUTCTimeMillis().GetValue(); }
 
+bool InUse(sd::ManualState st) {
+  return st == sd::ManualState::kFresh || st == sd::ManualState::kStable ||
+         st == sd::ManualState::kRed;
+}
+
 }  // namespace
+
+sd::Millis ShannonDepthPi::Now() { return NowMs(); }
 
 ShannonDepthPi::ShannonDepthPi(void* ppimgr)
     : opencpn_plugin_118(ppimgr), m_repaint_timer(this, kRepaintTimerId) {
@@ -63,13 +73,41 @@ ShannonDepthPi::~ShannonDepthPi() = default;
 int ShannonDepthPi::Init() {
   AddLocaleCatalog("opencpn-ShannonDepth_pi");
   Bind(wxEVT_TIMER, &ShannonDepthPi::OnRepaintTimer, this, kRepaintTimerId);
+  m_settings.Load();
   m_feed.reset(new FeedStore());
-  m_feed->Start([this]() { Repaint(); });
+  m_feed->Start([this]() {
+    Repaint();
+    if (m_dialog) m_dialog->RefreshAll();
+  });
   m_repaint_timer.Start(60 * 1000);  // the reading's age moves on
-  return WANTS_OVERLAY_CALLBACK | WANTS_OPENGL_OVERLAY_CALLBACK | WANTS_NMEA_EVENTS;
+
+  wxString sep = wxFileName::GetPathSeparator();
+  wxString dir = GetPluginDataDir(PKG_NAME) + sep + "data" + sep;
+  m_tool_id = InsertPlugInToolSVG(
+      "Shannon Depth", dir + "shannondepth_pi.svg", dir + "shannondepth_pi.svg",
+      dir + "shannondepth_pi_toggled.svg", wxITEM_NORMAL, "Shannon Depth",
+      "Depth calculator, your own reading and settings", nullptr, -1, 0, this);
+
+  // Test hook: SHANNONDEPTH_OPEN_TAB=0|1|2 opens the dialog on that tab at
+  // start-up, for automated screenshots. No effect when unset.
+  wxString open_tab;
+  if (wxGetEnv("SHANNONDEPTH_OPEN_TAB", &open_tab)) {
+    long tab = 0;
+    open_tab.ToLong(&tab);
+    CallAfter([this, tab]() { ShowDialog(static_cast<int>(tab)); });
+  }
+
+  return WANTS_OVERLAY_CALLBACK | WANTS_OPENGL_OVERLAY_CALLBACK | WANTS_NMEA_EVENTS |
+         INSTALLS_TOOLBAR_TOOL | WANTS_PREFERENCES;
 }
 
 bool ShannonDepthPi::DeInit() {
+  if (m_dialog) {
+    m_dialog->Destroy();
+    m_dialog = nullptr;
+  }
+  if (m_tool_id >= 0) RemovePlugInTool(m_tool_id);
+  m_tool_id = -1;
   m_repaint_timer.Stop();
   if (m_feed) m_feed->Stop();
   m_feed.reset();
@@ -110,32 +148,144 @@ void ShannonDepthPi::SetPositionFixEx(PlugIn_Position_Fix_Ex& pfix) {
   if (!was_valid) Repaint();
 }
 
-void ShannonDepthPi::OnRepaintTimer(wxTimerEvent&) { Repaint(); }
+void ShannonDepthPi::OnRepaintTimer(wxTimerEvent&) {
+  DropLapsedReadings();
+  Repaint();
+  if (m_dialog) m_dialog->RefreshAll();
+}
+
+void ShannonDepthPi::DropLapsedReadings() {
+  if (!m_feed || !m_feed->HasDatums()) return;
+  bool changed = false;
+  for (const auto& si : m_feed->Datums().stretches) {
+    auto it = m_settings.readings.find(si.stretch.id);
+    if (it == m_settings.readings.end()) continue;
+    sd::Reading gauge;
+    std::vector<sd::HistoryPoint> hist;
+    auto g = m_feed->Live().gauges.find(si.stretch.gauge_doc);
+    if (g != m_feed->Live().gauges.end()) {
+      gauge = g->second.reading;
+      hist = g->second.history;
+    }
+    if (sd::ManualStateAt(it->second.reading, NowMs(), gauge, hist,
+                          sd::StableTolerance(si.stretch)) == sd::ManualState::kLapsed) {
+      m_settings.readings.erase(it);
+      changed = true;
+    }
+  }
+  if (changed) m_settings.Save();
+}
+
+void ShannonDepthPi::SettingsChanged() {
+  m_settings.Save();
+  Repaint();
+  if (m_dialog) m_dialog->RefreshAll();
+}
+
+void ShannonDepthPi::SetOwnReading(const std::string& id, double level, ReadingKind kind,
+                                   const std::string& detail) {
+  StoredReading r;
+  r.reading.level = level;
+  r.reading.time = NowMs();
+  r.reading.valid = true;
+  r.kind = kind;
+  r.detail = detail;
+  // Anchor to the official gauge if it is current, so the reading can stay
+  // valid while the gauge stays steady.
+  if (m_feed && m_feed->HasDatums()) {
+    for (const auto& si : m_feed->Datums().stretches) {
+      if (si.stretch.id != id) continue;
+      auto g = m_feed->Live().gauges.find(si.stretch.gauge_doc);
+      if (g != m_feed->Live().gauges.end() && g->second.reading.valid &&
+          NowMs() - g->second.reading.time <= sd::kStableGaugeMaxAge) {
+        r.reading.has_anchor = true;
+        r.reading.anchor = g->second.reading.level;
+      }
+    }
+  }
+  m_settings.readings[id] = r;
+  SettingsChanged();
+}
+
+void ShannonDepthPi::ClearOwnReading(const std::string& id) {
+  m_settings.readings.erase(id);
+  SettingsChanged();
+}
+
+void ShannonDepthPi::OnToolbarToolCallback(int) { ShowDialog(0); }
+
+void ShannonDepthPi::ShowPreferencesDialog(wxWindow*) { ShowDialog(2); }
+
+void ShannonDepthPi::ShowDialog(int tab) {
+  if (!m_dialog) m_dialog = new ShannonDepthDialog(GetOCPNCanvasWindow(), this);
+  m_dialog->RefreshAll();
+  m_dialog->ShowTab(tab);
+  m_dialog->Show();
+  m_dialog->Raise();
+}
 
 void ShannonDepthPi::Repaint() {
   wxWindow* canvas = GetOCPNCanvasWindow();
   if (canvas) canvas->Refresh(false);
 }
 
-ShannonDepthPi::State ShannonDepthPi::CurrentState(double lat, double lon,
-                                                   bool from_boat) const {
+ShannonDepthPi::State ShannonDepthPi::CurrentState() const {
+  bool fix = NowMs() - m_fix_at <= kFixMaxAge;
+  if (fix) return StateAt(m_fix_lat, m_fix_lon, true);
+  return StateAt(m_view_lat, m_view_lon, false);
+}
+
+ShannonDepthPi::State ShannonDepthPi::StateAt(double lat, double lon, bool from_boat) const {
   State s;
   s.from_boat = from_boat;
   if (!m_feed || !m_feed->HasDatums()) return s;
   const sd::Datums& d = m_feed->Datums();
-  std::vector<sd::Stretch> core = sd::CoreStretches(d);
-  sd::Location loc = sd::Locate(core, d.zones, {lat, lon});
-  s.location.lock = loc.lock;
-  if (!loc.stretch) return s;
-  for (const auto& si : d.stretches)
-    if (si.stretch.id == loc.stretch->id) s.info = &si;
-  // Point at the long-lived copy, not the temporary vector.
-  s.location.stretch = s.info ? &s.info->stretch : nullptr;
+
+  if (!m_settings.stretch.empty()) {
+    for (const auto& si : d.stretches)
+      if (si.stretch.id == m_settings.stretch) s.info = &si;
+    s.by_hand = s.info != nullptr;
+  }
+  if (!s.info) {
+    if (!from_boat && !m_have_view) return s;
+    std::vector<sd::Stretch> core = sd::CoreStretches(d);
+    sd::Location loc = sd::Locate(core, d.zones, {lat, lon});
+    s.lock = loc.lock;
+    if (loc.stretch)
+      for (const auto& si : d.stretches)
+        if (si.stretch.id == loc.stretch->id) s.info = &si;
+  }
   if (!s.info) return s;
-  auto g = m_feed->Live().gauges.find(s.info->stretch.gauge_doc);
-  if (g != m_feed->Live().gauges.end()) s.reading = g->second.reading;
-  s.freshness = sd::FreshnessOf(s.reading, NowMs());
-  s.correction = sd::CorrectionOf(s.info->stretch, s.reading);
+
+  s.stretch = s.info->stretch;
+  int choice = m_settings.DatumChoice(s.stretch.id);
+  if (choice >= 0 && choice < static_cast<int>(s.info->alternatives.size()))
+    s.stretch.datum = s.info->alternatives[choice].level;
+
+  auto g = m_feed->Live().gauges.find(s.stretch.gauge_doc);
+  if (g != m_feed->Live().gauges.end()) {
+    s.gauge = g->second.reading;
+    s.history = g->second.history;
+  }
+  sd::Millis now = NowMs();
+  s.gauge_freshness = sd::FreshnessOf(s.gauge, now);
+  s.gauge_correction = sd::CorrectionOf(s.stretch, s.gauge);
+
+  auto own = m_settings.readings.find(s.stretch.id);
+  if (own != m_settings.readings.end()) {
+    sd::ManualState st = sd::ManualStateAt(own->second.reading, now, s.gauge, s.history,
+                                           sd::StableTolerance(s.stretch));
+    if (InUse(st)) {
+      s.own = &own->second;
+      s.own_state = st;
+      s.correction = sd::CorrectionOf(
+          s.stretch, sd::Reading{own->second.reading.level, own->second.reading.time, true});
+      s.usable = s.correction.available;
+      return s;
+    }
+  }
+  s.correction = s.gauge_correction;
+  s.usable = s.correction.available && s.gauge_freshness != sd::Freshness::kUnusable;
   return s;
 }
 
@@ -158,10 +308,10 @@ PanelContent ShannonDepthPi::BuildContent(const State& s, sd::Millis now) const 
     add(footer, kMuted, 0.8);
     return c;
   }
-  if (s.location.lock) {
+  if (s.lock) {
     add("Shannon Depth", kText, 1.0, true);
     add("No figure here", kGrey, 1.3, true);
-    add(U("At " + s.location.lock->name), kMuted);
+    add(U("At " + s.lock->name), kMuted);
     add("Levels change across locks and weirs", kMuted, 0.85);
     add(footer, kMuted, 0.8);
     return c;
@@ -176,8 +326,9 @@ PanelContent ShannonDepthPi::BuildContent(const State& s, sd::Millis now) const 
     return c;
   }
 
-  const sd::Stretch& st = s.info->stretch;
-  add(U(st.name) + (s.from_boat ? "" : " (chart centre)"), kText, 1.0, true);
+  const sd::Stretch& st = s.stretch;
+  wxString where = s.by_hand ? " (chosen by hand)" : s.from_boat ? "" : " (chart centre)";
+  add(U(st.name) + where, kText, 1.0, true);
 
   if (!s.correction.available) {
     add(st.has_datum ? "No reading yet" : "No datum for this stretch", kGrey, 1.3, true);
@@ -186,14 +337,18 @@ PanelContent ShannonDepthPi::BuildContent(const State& s, sd::Millis now) const 
   }
 
   const sd::Correction& k = s.correction;
-  sd::Millis age = now - s.reading.time;
-  bool unusable = s.freshness == sd::Freshness::kUnusable;
+  bool own = s.own != nullptr;
+  bool unusable = !own && s.gauge_freshness == sd::Freshness::kUnusable;
   wxString figure = U(sd::SignedFtIn(k.inches) + " \xC2\xB1" + sd::FtInText(k.band_inches));
   if (k.estimated) figure += " estimated";
-  c.border = unusable ? kGrey
-             : s.freshness == sd::Freshness::kCurrent ? kGreen
-             : s.freshness == sd::Freshness::kAgeing ? kAmber
-                                                      : kRed;
+  if (own) {
+    c.border = s.own_state == sd::ManualState::kRed ? kRed : kGreen;
+  } else {
+    c.border = unusable ? kGrey
+               : s.gauge_freshness == sd::Freshness::kCurrent ? kGreen
+               : s.gauge_freshness == sd::Freshness::kAgeing ? kAmber
+                                                             : kRed;
+  }
   add(figure, unusable ? kGrey : kText, 1.6, true);
 
   // What to do with it.
@@ -215,45 +370,72 @@ PanelContent ShannonDepthPi::BuildContent(const State& s, sd::Millis now) const 
     }
   }
 
-  // Freshness.
-  std::string age_text = sd::AgeText(age);
-  switch (s.freshness) {
-    case sd::Freshness::kCurrent: add(U("Reading " + age_text), kGreen); break;
-    case sd::Freshness::kAgeing: add(U("Reading " + age_text), kAmber); break;
-    case sd::Freshness::kOutOfDate: add(U("Out of date, " + age_text), kRed, 1.0, true); break;
-    case sd::Freshness::kUnusable:
-      add(U("Reading " + age_text + ": use your sounder"), kRed, 1.0, true);
-      break;
-    default: break;
+  if (own) {
+    // Your reading, and the live gauge beside it (rule 4).
+    std::string age = sd::AgeText(now - s.own->reading.time);
+    switch (s.own_state) {
+      case sd::ManualState::kFresh: add(U("Your reading, " + age), kGreen); break;
+      case sd::ManualState::kStable:
+        add(U("Your reading, " + age + ", gauge steady since"), kGreen);
+        break;
+      default:
+        add(U("Your reading, " + age + ": check it again"), kRed, 1.0, true);
+        break;
+    }
+    if (!s.own->detail.empty()) add(U(s.own->detail), kMuted, 0.8);
+    if (s.gauge_correction.available)
+      add(U("Gauge now: " + sd::SignedFtIn(s.gauge_correction.inches) + ", " +
+            sd::AgeText(now - s.gauge.time)),
+          kMuted, 0.85);
+    else
+      add("Gauge now: no reading", kMuted, 0.85);
+  } else {
+    std::string age_text = sd::AgeText(now - s.gauge.time);
+    switch (s.gauge_freshness) {
+      case sd::Freshness::kCurrent: add(U("Reading " + age_text), kGreen); break;
+      case sd::Freshness::kAgeing: add(U("Reading " + age_text), kAmber); break;
+      case sd::Freshness::kOutOfDate:
+        add(U("Out of date, " + age_text), kRed, 1.0, true);
+        break;
+      case sd::Freshness::kUnusable:
+        add(U("Reading " + age_text + ": use your sounder"), kRed, 1.0, true);
+        break;
+      default: break;
+    }
   }
 
   // Unconfirmed datum, until the CSIG settle it (rule 7).
   if (st.id == "derg") {
-    for (const auto& a : s.info->alternatives) {
-      int diff = sd::InchesNear(a.level - st.datum);
-      if (diff > 0)
-        add(U("Datum unconfirmed: the other Killaloe sill gives " + sd::FtInText(diff) + " less"),
-            kAmber, 0.85);
+    int choice = m_settings.DatumChoice("derg");
+    if (choice >= 0) {
+      add("Using the lower Killaloe sill (your setting)", kAmber, 0.85);
+    } else {
+      for (const auto& a : s.info->alternatives) {
+        int diff = sd::InchesNear(a.level - s.info->stretch.datum);
+        if (diff > 0)
+          add(U("Datum unconfirmed: the other Killaloe sill gives " + sd::FtInText(diff) +
+                " less"),
+              kAmber, 0.85);
+      }
     }
   }
 
   // Gauge and trend.
-  wxString gauge = U(st.gauge_name) + wxString::Format(" gauge %.3f m", s.reading.level);
-  auto g = m_feed->Live().gauges.find(st.gauge_doc);
-  if (g != m_feed->Live().gauges.end()) {
-    std::string tr = sd::TrendText(g->second.history);
+  if (s.gauge.valid) {
+    wxString gauge = U(st.gauge_name) + wxString::Format(" gauge %.3f m", s.gauge.level);
+    std::string tr = sd::TrendText(s.history);
     if (!tr.empty()) gauge += U(" \xC2\xB7 " + tr);
+    add(gauge, kMuted, 0.8);
   }
-  add(gauge, kMuted, 0.8);
   add(footer, kMuted, 0.8);
   return c;
 }
 
 void ShannonDepthPi::Draw(PlugIn_ViewPort* vp, wxDC* dc, wxGLContext* gl) {
-  bool fix = NowMs() - m_fix_at <= kFixMaxAge;
-  double lat = fix ? m_fix_lat : vp->clat;
-  double lon = fix ? m_fix_lon : vp->clon;
-  State s = CurrentState(lat, lon, fix);
+  m_view_lat = vp->clat;
+  m_view_lon = vp->clon;
+  m_have_view = true;
+  State s = CurrentState();
 
   wxFont* f = GetOCPNScaledFont_PlugIn("Dialog");
   wxFont base = f ? *f : *wxNORMAL_FONT;
@@ -261,9 +443,15 @@ void ShannonDepthPi::Draw(PlugIn_ViewPort* vp, wxDC* dc, wxGLContext* gl) {
 
   wxSize sz = m_renderer.Size();
   int margin = std::max(8, base.GetPointSize());
-  int x = margin;
-  int y = vp->pix_height - sz.GetHeight() - margin * 5;  // above the scale bar
-  if (y < margin) y = margin;
+  bool left = m_settings.corner == PanelCorner::kBottomLeft ||
+              m_settings.corner == PanelCorner::kTopLeft;
+  bool top = m_settings.corner == PanelCorner::kTopLeft ||
+             m_settings.corner == PanelCorner::kTopRight;
+  int x = left ? margin : vp->pix_width - sz.GetWidth() - margin;
+  int y = top ? margin * 4  // below the chart bar and compass
+              : vp->pix_height - sz.GetHeight() - margin * 5;  // above the scale bar
+  x = std::max(0, x);
+  y = std::max(0, y);
 
   if (dc) {
     m_renderer.DrawDC(*dc, x, y);

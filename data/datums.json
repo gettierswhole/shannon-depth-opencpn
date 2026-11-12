@@ -10,8 +10,19 @@
       "gauge": {
         "doc": "portumna",
         "station": "25341",
-        "name": "Portumna Bridge"
+        "name": "Portumna Bridge",
+        "zero": 29.169
       },
+      "cills": [
+        {
+          "name": "Killaloe upper cill",
+          "level": 27.81
+        },
+        {
+          "name": "Killaloe lower cill",
+          "level": 28.26
+        }
+      ],
       "datum": {
         "level": 30.2484,
         "basis": "chart-datum",
@@ -94,8 +105,19 @@
       "gauge": {
         "doc": "banagher",
         "station": "25017",
-        "name": "Banagher"
+        "name": "Banagher",
+        "zero": 30.33
       },
+      "cills": [
+        {
+          "name": "Victoria Lock upper cill",
+          "level": 30.5
+        },
+        {
+          "name": "Athlone lower cill",
+          "level": 30.51
+        }
+      ],
       "datum": {
         "level": 32.449,
         "basis": "summer-level",
@@ -197,8 +219,15 @@
       "gauge": {
         "doc": "athloneus",
         "station": "26333",
-        "name": "Athlone (above the weir)"
+        "name": "Athlone (above the weir)",
+        "zero": 32.137
       },
+      "cills": [
+        {
+          "name": "Athlone upper cill",
+          "level": 32.609
+        }
+      ],
       "datum": {
         "level": 34.2854,
         "basis": "chart-datum",
@@ -278,8 +307,10 @@
       "gauge": {
         "doc": "carrick",
         "station": "26324",
-        "name": "Carrick-on-Shannon"
+        "name": "Carrick-on-Shannon",
+        "zero": 38.888
       },
+      "cills": [],
       "datum": {
         "level": 40.27,
         "basis": "summer-level",

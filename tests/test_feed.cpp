@@ -46,6 +46,8 @@ int main(int argc, char** argv) {
   if (d.stretches.size() == 4) {
     CHECK(d.stretches[0].stretch.id == "derg" && std::abs(d.stretches[0].stretch.datum - 30.2484) < 1e-9, "derg datum");
     CHECK(d.stretches[0].alternatives.size() == 1, "derg alternative");
+    CHECK(std::abs(d.stretches[0].gauge_zero - 29.169) < 1e-9, "derg gauge zero");
+    CHECK(d.stretches[0].cills.size() == 2 && d.stretches[3].cills.empty(), "cills");
     CHECK(d.stretches[1].stretch.estimated && d.stretches[3].stretch.estimated, "estimated flags");
     CHECK(!d.stretches[2].stretch.estimated && d.stretches[2].stretch.boundary.size() > 4, "ree");
   }

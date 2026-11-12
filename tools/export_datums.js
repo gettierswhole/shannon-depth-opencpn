@@ -49,7 +49,9 @@ const stretches = box.REACHES.map((r) => {
     id: r.id,
     name: r.name,
     span: r.span,
-    gauge: { doc: r.gauge.doc, station: r.gauge.station, name: r.gauge.name },
+    gauge: { doc: r.gauge.doc, station: r.gauge.station, name: r.gauge.name, zero: r.gauge.zero },
+    // Lock cills, for a reading given in feet over the cill.
+    cills: r.cills.map((c) => ({ name: c.name, level: c.malin })),
     datum: datum == null ? null : { level: datum, basis, how, confirmed: false },
     alternatives,
     band: r.unc,

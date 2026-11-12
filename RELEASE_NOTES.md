@@ -2,18 +2,12 @@
 
 Shows, on the OpenCPN chart, how far today's Shannon water level is above or below the CSIG chart datum for the stretch the boat is in, using the live gauges and datums of the Shannon Chart Depth page.
 
-**In this version (0.2.0)**
-- Correction panel: the correction to charted depths in feet and inches with its band, what to do with it, the reading's age (green under 3 h, amber under 12 h, red "Out of date" after, greyed out with "use your sounder" after 48 h), and the gauge with its trend.
-- Stretch chosen from the boat's GPS fix, or the chart centre when there is no fix.
-- "Estimated" on the river stretches (Meelick–Athlone, Carrick pool); Killaloe sill caveat on Lough Derg.
-- "No stretch" outside the four stretches; no figure within a few hundred metres of a lock or weir.
-- Fetches live.json and datums.json every 15 minutes; keeps the last good copies for use offline.
+**New in 0.3.0**
+- Toolbar button opening three tabs: **Calculator**, **Your reading** and **Settings** (also from Options → Plugins → Preferences).
+- **Calculator**: enter the charted depth; get the water there now as a range and the clearance under the keel judged on the shallow end, with the page's verdicts (Should be fine, Go slow, Too tight, Could touch). Your draught is remembered.
+- **Your reading**: a gauge level in m OD Malin or a staff-gauge reading, feet over a lock cill, or a sounder / lead-line check at a charted spot. It replaces the gauge for that stretch, with the live gauge figure shown beside it. It stays in use while the official gauge stays within half the stretch's band of its level when you entered it (up to 7 days, and only while the gauge is current); otherwise it turns red at 3 h and lapses at 12 h.
+- **Settings**: draught, panel corner, choosing the stretch by hand, and the datum choices the page offers (Lough Derg upper or lower Killaloe sill, with a warning; Lough Ree 5 ft 6 in, 7 ft or 5 ft over the Athlone cill).
 
-**Not yet**: depth calculator, entering your own reading, settings.
+**From 0.2.0**: the live correction panel (correction in feet and inches with its band, age and freshness colour, "estimated" river stretches, Killaloe sill caveat, no figure near locks, offline cache).
 
-**Packages**
-- Windows 32-bit (OpenCPN's usual Windows build): `…msvc-wx32-10-x86.tar.gz`
-- Windows 64-bit: `…msvc-64-10-x86.tar.gz`
-- Android arm64: `…android-arm64-16-arm64.tar.gz`
-
-Install on Windows with Options → Plugins → Import plugin… On Android, use a custom plugin catalog pointing at this release's `ocpn-plugins.xml`.
+Install on Windows from the custom catalog, or with Options → Plugins → Import plugin… (the `msvc-wx32` package for the usual 32-bit OpenCPN).
