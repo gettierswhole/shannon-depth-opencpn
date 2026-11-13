@@ -1,0 +1,61 @@
+---
+name: possible-route
+on:
+  push:
+    branches: [main]
+    paths: ["possible-route/**", ".github/workflows/possible-route.yml"]
+  pull_request:
+    paths: ["possible-route/**", ".github/workflows/possible-route.yml"]
+  workflow_dispatch:
+
+# Possible route: a standalone Windows tool. It reads the member's own CSIG
+# chart on their own PC; this repository holds code only, no chart data.
+jobs:
+  windows:
+    runs-on: windows-latest
+    defaults:
+      run:
+        working-directory: possible-route
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt pyinstaller==6.11.1
+      - name: Self-test from source
+        run: python run_possible_route.py --selftest
+      - name: Build the app
+        run: >
+          pyinstaller --noconfirm --clean --windowed --name PossibleRoute
+          --add-data "possible_route/engine;possible_route/engine"
+          --add-data "possible_route/data;possible_route/data"
+          --collect-submodules skimage.graph
+          --hidden-import scipy.spatial --hidden-import scipy.ndimage
+          run_possible_route.py
+      - name: Build a console copy and self-test it frozen
+        run: |
+          pyinstaller --noconfirm --name PossibleRouteCLI --distpath dist-cli --add-data "possible_route/engine;possible_route/engine" --add-data "possible_route/data;possible_route/data" --collect-submodules skimage.graph --hidden-import scipy.spatial --hidden-import scipy.ndimage run_possible_route.py
+          dist-cli\PossibleRouteCLI\PossibleRouteCLI.exe --selftest
+      - name: Package
+        shell: pwsh
+        run: |
+          Copy-Item README.md dist\PossibleRoute\README.md
+          Compress-Archive -Path dist\PossibleRoute\* -DestinationPath PossibleRoute-windows.zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: PossibleRoute-windows
+          path: possible-route/PossibleRoute-windows.zip
+      - name: Publish a beta release when the version is new
+        if: github.ref == 'refs/heads/main'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          v=$(sed -n 's/^VERSION = "\(.*\)"/\1/p' possible_route/core.py)
+          tag="possible-route-v$v"
+          if gh release view "$tag" >/dev/null 2>&1; then echo "$tag already released"; exit 0; fi
+          gh release create "$tag" PossibleRoute-windows.zip --prerelease --latest=false \
+            --target "${{ github.sha }}" --title "Possible route $v (Windows, Lough Ree)" --notes-file RELEASE_NOTES.md

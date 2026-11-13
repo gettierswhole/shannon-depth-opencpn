@@ -1,0 +1,18 @@
+# Nothing read from a chart is ever committed: charts, grids, soundings,
+# marks, routes and pictures stay on the member's own computer.
+*.mbtiles
+*.npz
+*.npy
+*.gpx
+*.png
+soundings.json
+marks.json
+locks.json
+grid.npz
+cache/
+Possible Route/
+__pycache__/
+build/
+dist/
+dist-cli/
+*.spec

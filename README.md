@@ -7,6 +7,13 @@ always agree.
 
 **Untested experiment, not an aid to navigation.**
 
+## Possible route (beta, Windows)
+
+A separate tool in [`possible-route/`](possible-route/): it suggests a route on
+Lough Ree for your draught and margin, from your own copy of the CSIG chart and
+today's gauge readings, and writes a GPX for OpenCPN. Download it from the
+**Possible route** release. **Possible route, not an aid to navigation.**
+
 ## Status
 
 Track A, phase 3 in progress. The panel on the chart shows, for the stretch
