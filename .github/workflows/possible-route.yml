@@ -10,6 +10,9 @@ on:
 
 # Possible route: a standalone Windows tool. It reads the member's own CSIG
 # chart on their own PC; this repository holds code only, no chart data.
+permissions:
+  contents: write
+
 jobs:
   windows:
     runs-on: windows-latest
